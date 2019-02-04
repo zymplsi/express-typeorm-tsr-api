@@ -1,0 +1,788 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Teacher Student Registration API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/commonstudents": {
+      "get": {
+        "x-controller-name": "CommonStudentsController",
+        "x-operation-name": "find",
+        "tags": ["CommonStudentsController"],
+        "responses": {
+          "200": {
+            "description": "retrieve a list of students common to a given list of teachers",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "teacher",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/ping": {
+      "get": {
+        "x-controller-name": "PingController",
+        "x-operation-name": "ping",
+        "tags": ["PingController"],
+        "responses": {
+          "200": {
+            "description": "Ping Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "greeting": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "headers": {
+                      "type": "object",
+                      "properties": {
+                        "Content-Type": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "x-controller-name": "RegisterController",
+        "x-operation-name": "create",
+        "tags": ["RegisterController"],
+        "responses": {
+          "204": {
+            "description": "register one or more students to a specified teacher",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Register"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Register"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/registrations/count": {
+      "get": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "count",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "200": {
+            "description": "Registration model count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "where",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/registrations/{id}": {
+      "put": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "replaceById",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "204": {
+            "description": "Registration PUT success"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              }
+            }
+          },
+          "x-parameter-index": 1
+        }
+      },
+      "patch": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "updateById",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "204": {
+            "description": "Registration PATCH success"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              }
+            }
+          },
+          "x-parameter-index": 1
+        }
+      },
+      "get": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "findById",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "200": {
+            "description": "Registration model instance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Registration"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "deleteById",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "204": {
+            "description": "Registration DELETE success"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ]
+      }
+    },
+    "/registrations": {
+      "post": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "create",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "200": {
+            "description": "Registration model instance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Registration"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "updateAll",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "200": {
+            "description": "Registration PATCH success count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "where",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "x-controller-name": "RegistrationController",
+        "x-operation-name": "find",
+        "tags": ["RegistrationController"],
+        "responses": {
+          "200": {
+            "description": "Array of Registration model instances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Registration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "properties": {
+                "where": {
+                  "type": "object"
+                },
+                "fields": {
+                  "type": "object"
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "skip": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "order": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "relation": {
+                        "type": "string"
+                      },
+                      "scope": {
+                        "properties": {
+                          "where": {
+                            "type": "object"
+                          },
+                          "fields": {
+                            "type": "object"
+                          },
+                          "offset": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "limit": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "skip": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "order": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/retrievefornotifications": {
+      "post": {
+        "x-controller-name": "RetrieveForNotificationsController",
+        "x-operation-name": "create",
+        "tags": ["RetrieveForNotificationsController"],
+        "responses": {
+          "200": {
+            "description": "retrieve a list of students who can receive a given notification.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrieveForNotifications"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrieveForNotifications"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/{id}": {
+      "get": {
+        "x-controller-name": "StudentController",
+        "x-operation-name": "findById",
+        "tags": ["StudentController"],
+        "responses": {
+          "200": {
+            "description": "Student model instance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "x-controller-name": "StudentController",
+        "x-operation-name": "deleteById",
+        "tags": ["StudentController"],
+        "responses": {
+          "204": {
+            "description": "Student DELETE success"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ]
+      }
+    },
+    "/students": {
+      "post": {
+        "x-controller-name": "StudentController",
+        "x-operation-name": "create",
+        "tags": ["StudentController"],
+        "responses": {
+          "200": {
+            "description": "Student model instance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Student"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "x-controller-name": "StudentController",
+        "x-operation-name": "find",
+        "tags": ["StudentController"],
+        "responses": {
+          "200": {
+            "description": "Array of Student model instances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Student"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "properties": {
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/suspend": {
+      "post": {
+        "x-controller-name": "SuspendController",
+        "x-operation-name": "create",
+        "tags": ["SuspendController"],
+        "responses": {
+          "204": {
+            "description": "suspend a specified student",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suspend"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Suspend"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teachers/{id}": {
+      "get": {
+        "x-controller-name": "TeacherController",
+        "x-operation-name": "findById",
+        "tags": ["TeacherController"],
+        "responses": {
+          "200": {
+            "description": "Teacher model instance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "x-controller-name": "TeacherController",
+        "x-operation-name": "deleteById",
+        "tags": ["TeacherController"],
+        "responses": {
+          "204": {
+            "description": "Teacher DELETE success"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "number"
+            },
+            "required": true
+          }
+        ]
+      }
+    },
+    "/teachers": {
+      "post": {
+        "x-controller-name": "TeacherController",
+        "x-operation-name": "create",
+        "tags": ["TeacherController"],
+        "responses": {
+          "200": {
+            "description": "Teacher model instance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Teacher"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "x-controller-name": "TeacherController",
+        "x-operation-name": "find",
+        "tags": ["TeacherController"],
+        "responses": {
+          "200": {
+            "description": "Array of Teacher model instances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Teacher"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "properties": {
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "type": "object"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Registration": {
+        "title": "Registration",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "teacherId": {
+            "type": "number"
+          },
+          "studentId": {
+            "type": "number"
+          }
+        }
+      },
+      "Student": {
+        "title": "Student",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": ["email"]
+      },
+      "Teacher": {
+        "title": "Teacher",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": ["email"]
+      },
+      "Register": {
+        "title": "Register",
+        "properties": {
+          "teacher": {
+            "type": "string"
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["teacher", "students"]
+      },
+      "RetrieveForNotifications": {
+        "title": "RetrieveForNotifications",
+        "properties": {
+          "teacher": {
+            "type": "string"
+          },
+          "notification": {
+            "type": "string"
+          }
+        },
+        "required": ["teacher", "notification"]
+      },
+      "Suspend": {
+        "title": "Suspend",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": ["email"]
+      }
+    }
+  }
+}
