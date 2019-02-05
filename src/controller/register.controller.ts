@@ -4,12 +4,13 @@ import { validate, ValidationError } from 'class-validator';
 import { Registration } from '../entity/Registration';
 import { Student } from '../entity/Student';
 import { Teacher } from '../entity/Teacher';
+import { validateTeacherEmail, validateStudentEmail } from './helper';
 
 export class RegisterController {
   private registrationRepository = getRepository(Registration);
-  private studentRepository = getRepository(Student);
-  private teacherRepository = getRepository(Teacher);
-
+  
+  /** A teacher can register multiple students. */
+  /** A student can also be registered to multiple teachers. */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const specifiedTeacherEmail = req.body.teacher;
@@ -19,19 +20,14 @@ export class RegisterController {
       const [
         specifiedTeacher,
         specifiedStudentsList
-      ] = await this.validateSpecifiedEmailsOrThrowError(
+      ] = await this.validateSpecifiedEmails(
         specifiedTeacherEmail,
         specifiedStudentsEmailList
       );
 
-      /** list all specified students and also insert new into student repository */
-      const specifiedStudentsListWithNewInserts = await this.insertNewSpecifiedStudents(
-        specifiedStudentsList
-      );
-
       /** register all specified students with specified teacher */
       await this.registerStudentsWithTeacher(
-        specifiedStudentsListWithNewInserts,
+        specifiedStudentsList,
         specifiedTeacher
       );
       res.sendStatus(204);
@@ -40,6 +36,10 @@ export class RegisterController {
     }
   }
 
+  /** Register all specified students to specified teacher. */
+  /** Checks if student is already registered. */
+  /** Register only new students and throw error if no */
+  /** new student is to be registered */
   private async registerStudentsWithTeacher(
     specifiedStudentsList: Student[],
     specifiedTeacher: Teacher
@@ -75,6 +75,10 @@ export class RegisterController {
       )
       .map((student: Student) => student.id);
 
+    if (specifiedStudentsIdListToRegister.length === 0) {
+      throw new Error('no new student to register');
+    }
+
     /** create list of teacher, student id pairs for insert to registration repository */
     const specifiedTeacherStudentsToRegister = specifiedStudentsIdListToRegister.map(
       specifiedStudentId =>
@@ -88,7 +92,7 @@ export class RegisterController {
     );
 
     /** insert teacher, students id pairs into registration repository */
-   return await this.registrationRepository
+    return await this.registrationRepository
       .createQueryBuilder()
       .insert()
       .into(Registration)
@@ -96,26 +100,16 @@ export class RegisterController {
       .execute();
   }
 
-  private async validateSpecifiedEmailsOrThrowError(
+  /** Validate and return list specified students and teacher. */
+  /** Upsert if students or teacher are not found, into */
+  /** Student and Teacher repository accordingly. */
+  /** Will throw error if student list is empty */
+  private async validateSpecifiedEmails(
     teacherEmail: string,
     studentsEmailList: string[]
   ): Promise<[Teacher, Student[]]> {
     /** validate specified teacher's email*/
-    const teacher: Teacher = new Teacher();
-    teacher.email = teacherEmail;
-    const teacherError: ValidationError[] = await validate(teacher);
-    if (teacherError.length > 0) {
-      throw new Error('teacher email is not valid');
-    }
-
-    const teacherIsMatched = await this.teacherRepository
-      .createQueryBuilder('teacher')
-      .where('teacher.email = :email', { email: teacherEmail })
-      .getOne();
-
-    if (!teacherIsMatched) {
-      throw new Error('teacher is not found');
-    }
+    const teacherValidated = await validateTeacherEmail(teacherEmail, true);
 
     /** check specified students' email list is not empty */
     const specifiedStudentsEmailList: Array<string> = studentsEmailList;
@@ -125,54 +119,11 @@ export class RegisterController {
 
     /** validate specified students' email */
     const studentsListValidated: Student[] = await Promise.all(
-      studentsEmailList.map(async email => {
-        const student = new Student();
-        student.email = email;
-        const emailError: ValidationError[] = await validate(student);
-        if (emailError.length > 0) {
-          throw new Error('student email is not valid');
-        }
-        return student;
-      })
+      studentsEmailList.map(
+        async email => await validateStudentEmail(email, true)
+      )
     );
 
-    return [teacherIsMatched, studentsListValidated];
-  }
-
-  private async insertNewSpecifiedStudents(
-    specifiedStudentsList: Student[]
-  ): Promise<Student[]> {
-    /** list specified students emails */
-    const specifiedStudentsEmailList = specifiedStudentsList.map(
-      student => student.email
-    );
-
-    /** select specified students in student repository */
-    const specifiedStudentsInRepository = await this.studentRepository
-      .createQueryBuilder('student')
-      .where('student.email IN (:students)', {
-        students: specifiedStudentsEmailList
-      })
-      .getMany();
-
-    /** map specified students email that exist in student repository */
-    const specifiedStudentsInRepositoryEmailList = specifiedStudentsInRepository.map(
-      student => student.email
-    );
-
-    /** list specified students email to insert into student repository */
-    const studentsToInsertStudentRepositoryEmail = specifiedStudentsList.filter(
-      student => !specifiedStudentsInRepositoryEmailList.includes(student.email)
-    );
-
-    /** insert specified students into student repository */
-    const specifiedStudentsNewInRepository = await this.studentRepository.save(
-      studentsToInsertStudentRepositoryEmail
-    );
-
-    return [
-      ...specifiedStudentsInRepository,
-      ...specifiedStudentsNewInRepository
-    ];
+    return [teacherValidated, studentsListValidated];
   }
 }
