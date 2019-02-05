@@ -1,5 +1,13 @@
-import { PrimaryGeneratedColumn, Column, Index, Entity } from 'typeorm';
+import {
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  Entity,
+  OneToMany
+} from 'typeorm';
 import { IsEmail } from 'class-validator';
+import { Student } from './Student';
+import { Registration } from './Registration';
 
 @Entity()
 export class Teacher {
@@ -14,4 +22,7 @@ export class Teacher {
   })
   @IsEmail()
   email: string;
+
+  @OneToMany(type => Registration, registration => registration.student)
+  students: Student[];
 }
