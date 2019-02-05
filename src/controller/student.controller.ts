@@ -7,7 +7,6 @@ export class StudentController {
   private studentRepository = getRepository(Student);
 
   /** finds all teachers with limit and offset filters */
-
   async find(req: Request, res: Response, next: NextFunction) {
     const query = this.studentRepository.createQueryBuilder('student');
 
@@ -54,17 +53,13 @@ export class StudentController {
       student.email = req.body.email;
       validationErrors = await validate(student);
       if (validationErrors.length > 0) {
-        throw 400;
+        throw new Error('email is not valid');
       }
 
       await this.studentRepository.save(student);
       res.send(student);
     } catch (error) {
-      if (error === 400) {
-        res.status(400).send(JSON.stringify(validationErrors[0].constraints));
-      } else {
-        res.status(400).send(JSON.stringify(error.message));
-      }
+      res.status(400).send(JSON.stringify(error.message));
     }
   }
 
