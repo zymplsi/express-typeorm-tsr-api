@@ -1,6 +1,5 @@
 import { getRepository } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
-import { validate, ValidationError } from 'class-validator';
 import { Registration } from '../entity/Registration';
 import { Student } from '../entity/Student';
 import { Teacher } from '../entity/Teacher';
