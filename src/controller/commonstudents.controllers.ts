@@ -8,40 +8,43 @@ export class CommonStudentsController {
 
   /** retrieve a list of students common to a given list of teachers */
   async find(req: Request, res: Response, next: NextFunction) {
-    const queryParams = req.query.teacher;
+    try {
+      const queryParams = req.query.teacher;
 
-    /** single email queryParam is not an Array */
-    /** normalise all queryParams into an Array */
-    const specifiedTeacherEmails = Array.isArray(queryParams)
-      ? queryParams
-      : [queryParams];
+      /** single email queryParam is not an Array */
+      /** normalise all queryParams into an Array */
+      const specifiedTeacherEmails = Array.isArray(queryParams)
+        ? queryParams
+        : [queryParams];
 
-    /** validate specified teachers' email */
-    /** throw error if email is not found */
-    await Promise.all(
-      specifiedTeacherEmails.map(
-        async email => await validateTeacherEmail(email)
-      )
-    );
+      /** validate specified teachers' email */
+      /** throw error if email is not found */
+      await Promise.all(
+        specifiedTeacherEmails.map(
+          async email => await validateTeacherEmail(email)
+        )
+      );
 
-    /** list all students registered to specified teachers */
-    const specifiedTeacherRegistrationList = await this.registrationRepository
-      .createQueryBuilder('registration')
-      .innerJoinAndSelect('registration.teacher', 'teacher')
-      .innerJoinAndSelect('registration.student', 'student')
-      .where('teacher.email IN (:emails)', { emails: specifiedTeacherEmails })
-      .getMany();
+      /** list all students registered to specified teachers */
+      const specifiedTeacherRegistrationList = await this.registrationRepository
+        .createQueryBuilder('registration')
+        .innerJoinAndSelect('registration.teacher', 'teacher')
+        .innerJoinAndSelect('registration.student', 'student')
+        .where('teacher.email IN (:emails)', { emails: specifiedTeacherEmails })
+        .getMany();
 
-    /** retrieve from registaration list id of students*/
-    /** that are common to sepcified teachers */
-    const commonStudentsEmailList = await this.getCommonStudensEmailList(
-      specifiedTeacherRegistrationList
-    );
+      /** retrieve from registaration list id of students*/
+      /** that are common to sepcified teachers */
+      const commonStudentsEmailList = await this.getCommonStudensEmailList(
+        specifiedTeacherRegistrationList
+      );
 
-
-    res.status(200).json({
-      students: commonStudentsEmailList
-    });
+      res.status(200).json({
+        students: commonStudentsEmailList
+      });
+    } catch (error) {
+      res.status(400).send(error.message);
+    }
   }
 
   /** retrieve from registaration list id of students*/
@@ -49,7 +52,6 @@ export class CommonStudentsController {
   private async getCommonStudensEmailList(
     specifiedTeacherRegistrationList: Registration[]
   ) {
-
     /** map through registrations list to get student ids */
     /** and do a count of each student id that is duplicated */
     const commonStudensIdList = specifiedTeacherRegistrationList
