@@ -22,7 +22,7 @@ createConnection()
       '/api-docs',
       swaggerUi.serve,
       swaggerUi.setup(swaggerDocument, {
-        explorer: true
+        explorer: false,
       })
     );
     app.use('/api', apiRoutes);
