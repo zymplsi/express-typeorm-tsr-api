@@ -154,11 +154,11 @@
       "Suspend": {
         "title": "Suspend",
         "properties": {
-          "email": {
+          "student": {
             "type": "string"
           }
         },
-        "required": ["email"]
+        "required": ["student"]
       }
     }
   }
