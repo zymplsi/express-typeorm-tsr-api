@@ -73,7 +73,6 @@ export const validateStudentEmail = async (
   email: string,
   upsert: boolean = false
 ): Promise<Student> => {
-  console.log('validate');
   let studentMatched: Student;
   const student = await validateEmail(email, new Student());
   const studentRepository = getRepository(Student);
@@ -99,9 +98,12 @@ export const validateEmail = async (
   type: Teacher | Student
 ): Promise<Student | Teacher> => {
   type.email = email;
-  const error: ValidationError[] = await validate(type);
-  if (error.length > 0) {
-    throw new Error('email is not valid');
+  try {
+    const error: ValidationError[] = await validate(type);
+    if (error.length > 0) {
+      throw new Error('email is not valid');
+    }
+    return type;
+  } finally {
   }
-  return type;
 };
