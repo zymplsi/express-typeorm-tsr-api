@@ -1,8 +1,45 @@
 import { validate, ValidationError } from 'class-validator';
-import { Registration } from '../entity/Registration';
 import { Student } from '../entity/Student';
 import { Teacher } from '../entity/Teacher';
-import { getRepository, Connection } from 'typeorm';
+import { getRepository, Repository } from 'typeorm';
+
+export class EmailValidator {
+  private repository: Repository<Teacher | Student>;
+  private entityWithValidEmail: Teacher | Student;
+  private entityFromRepo: Teacher | Student;
+
+  constructor(
+    private entity: Teacher | Student,
+    private email: string,
+    private upsert: boolean = false
+  ) {
+    this.repository = getRepository(entity.constructor.name);
+  }
+
+  public async validate() {
+    this.entityWithValidEmail = await validateEmail(this.email, this.entity);
+    this.entityFromRepo = await this.repository
+      .createQueryBuilder('entity')
+      .where('entity.email = :email', { email: this.email })
+      .getOne();
+
+    if (!this.entityFromRepo) {
+      if (this.upsert) {
+        this.entityFromRepo = await this.repository.save(
+          this.entityWithValidEmail
+        );
+      } else {
+        throw new Error(
+          `${this.entity.constructor.name.toLowerCase()} is not found`
+        );
+      }
+    }
+  }
+
+  get validatedEntity() {
+    return this.entityFromRepo;
+  }
+}
 
 /** validate specified teacher's email with upsert option */
 /** and throw error if invalid */
@@ -36,9 +73,8 @@ export const validateStudentEmail = async (
   email: string,
   upsert: boolean = false
 ): Promise<Student> => {
-
+  console.log('validate');
   let studentMatched: Student;
-
   const student = await validateEmail(email, new Student());
   const studentRepository = getRepository(Student);
   studentMatched = await studentRepository
