@@ -3,6 +3,8 @@ import { Student } from '../entity/Student';
 import { Teacher } from '../entity/Teacher';
 import { getRepository, Repository } from 'typeorm';
 
+/** Validate Student's or Teacher's email with */
+/** option to throw error or insert if not found */
 export class EmailValidator {
   private repository: Repository<Teacher | Student>;
   private entityWithValidEmail: Teacher | Student;
@@ -16,7 +18,9 @@ export class EmailValidator {
     this.repository = getRepository(entity.constructor.name);
   }
 
-  public async validate() {
+  /** validate email and throw error if upsert is false */
+  /** validate email and insert if upsert is true */
+  async validate() {
     this.entityWithValidEmail = await validateEmail(this.email, this.entity);
     this.entityFromRepo = await this.repository
       .createQueryBuilder('entity')
@@ -36,61 +40,11 @@ export class EmailValidator {
     }
   }
 
+  /** return validated email with id from repo */
   get validatedEntity() {
     return this.entityFromRepo;
   }
 }
-
-/** validate specified teacher's email with upsert option */
-/** and throw error if invalid */
-export const validateTeacherEmail = async (
-  email: string,
-  upsert: boolean = false
-): Promise<Teacher> => {
-  let teacherMatched: Teacher;
-  const teacher = await validateEmail(email, new Teacher());
-
-  const teacherRepository = getRepository(Teacher);
-  teacherMatched = await teacherRepository
-    .createQueryBuilder('teacher')
-    .where('teacher.email = :email', { email: teacher.email })
-    .getOne();
-
-  if (!teacherMatched) {
-    if (upsert) {
-      teacherMatched = await teacherRepository.save(teacher);
-    } else {
-      throw new Error('teacher is not found');
-    }
-  }
-
-  return teacherMatched;
-};
-
-/** validate specified student's email with upsert option */
-/** and throw error if invalid */
-export const validateStudentEmail = async (
-  email: string,
-  upsert: boolean = false
-): Promise<Student> => {
-  let studentMatched: Student;
-  const student = await validateEmail(email, new Student());
-  const studentRepository = getRepository(Student);
-  studentMatched = await studentRepository
-    .createQueryBuilder('student')
-    .where('student.email = :email', { email: student.email })
-    .getOne();
-
-  if (!studentMatched) {
-    if (upsert) {
-      studentMatched = await studentRepository.save(student);
-    } else {
-      throw new Error('student is not found');
-    }
-  }
-
-  return studentMatched;
-};
 
 /** validate email and throw error if invalid */
 export const validateEmail = async (
@@ -107,3 +61,15 @@ export const validateEmail = async (
   } finally {
   }
 };
+
+export const validateEntity = async (
+  email: string,
+  entity: Student | Teacher,
+  upsert: boolean = false
+) => {
+  const entityValidator = new EmailValidator(entity, email,upsert);
+  await entityValidator.validate();
+  return entityValidator.validatedEntity;
+};
+
+
