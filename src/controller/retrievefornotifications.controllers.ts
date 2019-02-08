@@ -1,13 +1,10 @@
 import { getRepository } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
-import {
-  validateTeacherEmail,
-  validateStudentEmail,
-  EmailValidator
-} from './helper';
+import { validateEntity } from './helper';
 import { Student } from '../../src/entity/Student';
 import { Teacher } from '../../src/entity/Teacher';
+import { validate, ValidationError } from 'class-validator';
 
 export class RetrieveForNotificationsController {
   private registrationRepository = getRepository(Registration);
@@ -18,26 +15,13 @@ export class RetrieveForNotificationsController {
       const teacherEmail = req.body.teacher;
       const notification = req.body.notification;
 
-      console.log('test');
-      /** validate specified teacher's email */
-      /** throw error if email is not found */
-      await this.validateEntity(teacherEmail, new Teacher());
-
-     
-
       /** parse student's email from message */
       const specifiedStudentsEmailList = this.parseSpecifiedeMails(
         notification
       );
-
-      console.log(specifiedStudentsEmailList);
-      /** validate specified students' email */
-      /** throw error if email is not found */
-      await Promise.all(
-        specifiedStudentsEmailList.map(
-          async email => await this.validateEntity(email, new Student())
-        )
-      );
+      
+      /** Validate and return specified teacher or throw error if not found */
+      await this.validateTeacher(teacherEmail);
 
       /** create join table between teachers and students */
       const jointableQuery = this.registrationRepository
@@ -87,17 +71,8 @@ export class RetrieveForNotificationsController {
       });
     } catch (error) {
       res.status(400).send(error.message);
-    }finally{
-      
+    } finally {
     }
-  }
-
-  /** validate specified students' email */
-  /** throw error if email is not found */
-  async validateEntity(email: string, entity: Student | Teacher) {
-    const entityValidator = new EmailValidator(entity, email);
-    await entityValidator.validate();
-    return entityValidator;
   }
 
   /** parse email from message and return in an Array */
@@ -109,6 +84,23 @@ export class RetrieveForNotificationsController {
       })
       .map(email => {
         return email.slice(1);
+      })
+      .filter(async email => {
+        let student = new Student();
+        student.email = email;
+        try {
+          const error: ValidationError[] = await validate(student);
+          if (error.length > 0) {
+            return false;
+          }
+          return true;
+        } finally {
+        }
       });
+  }
+
+  /** Validate and return specified teacher or throw error if not found */
+  async validateTeacher(email: string) {
+    return await validateEntity(email, new Teacher());
   }
 }
