@@ -1,8 +1,7 @@
 import { getRepository } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
-import { EmailValidator } from './helper';
-import { Student } from '../../src/entity/Student';
+import { validateEntity } from './helper';
 import { Teacher } from '../../src/entity/Teacher';
 
 export class CommonStudentsController {
@@ -53,7 +52,7 @@ export class CommonStudentsController {
   /** throw error if email is not found */
   async validateEmails(emails: string[]) {
       await Promise.all(
-        emails.map(async email => await this.validateEntity(email, new Teacher()))
+        emails.map(async email => await validateEntity(email, new Teacher()))
       );
   }
 
@@ -100,13 +99,5 @@ export class CommonStudentsController {
           registration => registration.studentId === id
         ).student.email
     );
-  }
-
-  /** validate specified students' email */
-  /** throw error if email is not found */
-  async validateEntity(email: string, entity: Student | Teacher) {
-    const entityValidator = new EmailValidator(entity, email);
-    await entityValidator.validate();
-    return entityValidator;
   }
 }
