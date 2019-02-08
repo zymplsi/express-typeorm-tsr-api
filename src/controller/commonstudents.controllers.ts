@@ -1,7 +1,9 @@
 import { getRepository } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
-import { validateTeacherEmail } from './helper';
+import { validateTeacherEmail, EmailValidator } from './helper';
+import { Student } from '../../src/entity/Student';
+import { Teacher } from '../../src/entity/Teacher';
 
 export class CommonStudentsController {
   private registrationRepository = getRepository(Registration);
@@ -21,7 +23,7 @@ export class CommonStudentsController {
       /** throw error if email is not found */
       await Promise.all(
         specifiedTeacherEmails.map(
-          async email => await validateTeacherEmail(email)
+          async email =>  await this.validateEntity(email, new Teacher())
         )
       );
 
@@ -71,12 +73,12 @@ export class CommonStudentsController {
 
         /** list specified teachers' email  */
         const specifiedTeacherEmails = specifiedTeacherRegistrationList.map(
-          regitration => regitration.teacher.email
+          registration => registration.teacher.email
         );
-
-        /** id count should be equal to number of specified teachers  */
+        
+        /** id count should be equal to number of unique specified teachers  */
         /** if the id is common  */
-        if (count === specifiedTeacherEmails.length) {
+        if (count === new Set(specifiedTeacherEmails).size) {
           return [...idStore, id];
         }
         return idStore;
@@ -90,4 +92,13 @@ export class CommonStudentsController {
         ).student.email
     );
   }
+
+  /** validate specified students' email */
+  /** throw error if email is not found */
+  async validateEntity(email: string, entity: Student | Teacher) {
+    const entityValidator = new EmailValidator(entity, email);
+    await entityValidator.validate();
+    return entityValidator;
+  }
+
 }
