@@ -1,7 +1,7 @@
 import { getRepository } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
-import { EmailValidator } from './helper';
+import { EmailValidator, validateEntity } from './helper';
 import { Student } from '../../src/entity/Student';
 
 export class SuspendController {
@@ -22,7 +22,7 @@ export class SuspendController {
         .update()
         .set({ suspended: true })
         .where('registration.studentId =  :id', {
-          id: studentValidator.validatedEntity.id
+          id: studentValidator.id
         })
         .execute();
 
@@ -35,8 +35,6 @@ export class SuspendController {
   /** validate specified students' email */
   /** throw error if email is not found */
   async validateStudent(email: string) {
-    const studentValidator = new EmailValidator(new Student(), email);
-    await studentValidator.validate();
-    return studentValidator;
+    return await validateEntity(email, new Student());
   }
 }
