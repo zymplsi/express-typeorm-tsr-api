@@ -3,11 +3,11 @@ import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
 import { Student } from '../entity/Student';
 import { Teacher } from '../entity/Teacher';
-import { validateTeacherEmail, validateStudentEmail } from './helper';
+import { validateEntity } from './helper';
 
 export class RegisterController {
   private registrationRepository = getRepository(Registration);
-  
+
   /** A teacher can register multiple students. */
   /** A student can also be registered to multiple teachers. */
   async create(req: Request, res: Response, next: NextFunction) {
@@ -15,42 +15,51 @@ export class RegisterController {
       const specifiedTeacherEmail = req.body.teacher;
       const specifiedStudentsEmailList = req.body.students;
 
-      /** validate and list specified students and teacher */
-      const [
-        specifiedTeacher,
-        specifiedStudentsList
-      ] = await this.validateSpecifiedEmails(
-        specifiedTeacherEmail,
+      /** Validate and return specified teacher or insert if not found */
+      const specifiedTeacher = await this.validateTeacher(
+        specifiedTeacherEmail
+      );
+
+      /** Validate and return specified student list or throw Error */
+      const specifiedStudentsList = await this.validateStudents(
         specifiedStudentsEmailList
       );
 
-      /** register all specified students with specified teacher */
-      await this.registerStudentsWithTeacher(
-        specifiedStudentsList,
-        specifiedTeacher
+      /** select all students already registered to specified teacher */
+      const specifiedTeacherRegistrationList = await this.registrationRepository
+        .createQueryBuilder('registration')
+        .innerJoinAndSelect('registration.teacher', 'teacher')
+        .innerJoinAndSelect('registration.student', 'student')
+        .where('teacher.email = :email', { email: specifiedTeacher.email })
+        .getMany();
+
+      /** list students to register to specified teacher */
+      const studentsToRegisterWithTeacherList = this.studentsToRegisterWithTeacher(
+        specifiedTeacherRegistrationList,
+        <Student[]>specifiedStudentsList,
+        <Teacher>specifiedTeacher
       );
+
+      /** insert teacher, students id pairs into registration repository */
+      await this.registrationRepository
+        .createQueryBuilder()
+        .insert()
+        .into(Registration)
+        .values(studentsToRegisterWithTeacherList)
+        .execute();
+
       res.sendStatus(204);
     } catch (error) {
       res.status(400).send(error.message);
     }
   }
 
-  /** Register all specified students to specified teacher. */
-  /** Checks if student is already registered. */
-  /** Register only new students and throw error if no */
-  /** new student is to be registered */
-  private async registerStudentsWithTeacher(
+  /** list students to register to specified teacher */
+  studentsToRegisterWithTeacher(
+    specifiedTeacherRegistrationList: Registration[],
     specifiedStudentsList: Student[],
     specifiedTeacher: Teacher
   ) {
-    /** select all students already registered to specified teacher */
-    const specifiedTeacherRegistrationList = await this.registrationRepository
-      .createQueryBuilder('registration')
-      .innerJoinAndSelect('registration.teacher', 'teacher')
-      .innerJoinAndSelect('registration.student', 'student')
-      .where('teacher.email = :email', { email: specifiedTeacher.email })
-      .getMany();
-
     /** list all student's email already registered with the specified teacher */
     const studentRegisteredWithTeacherEmailList = specifiedTeacherRegistrationList.map(
       registration => registration.student.email
@@ -79,50 +88,31 @@ export class RegisterController {
     }
 
     /** create list of teacher, student id pairs for insert to registration repository */
-    const specifiedTeacherStudentsToRegister = specifiedStudentsIdListToRegister.map(
-      specifiedStudentId =>
-        Object.assign(
-          {},
-          {
-            studentId: specifiedStudentId,
-            teacherId: specifiedTeacher.id
-          }
-        )
-    );
-
-    /** insert teacher, students id pairs into registration repository */
-    return await this.registrationRepository
-      .createQueryBuilder()
-      .insert()
-      .into(Registration)
-      .values(specifiedTeacherStudentsToRegister)
-      .execute();
-  }
-
-  /** Validate and return list specified students and teacher. */
-  /** Upsert if students or teacher are not found, into */
-  /** Student and Teacher repository accordingly. */
-  /** Will throw error if student list is empty */
-  private async validateSpecifiedEmails(
-    teacherEmail: string,
-    studentsEmailList: string[]
-  ): Promise<[Teacher, Student[]]> {
-    /** validate specified teacher's email*/
-    const teacherValidated = await validateTeacherEmail(teacherEmail, true);
-
-    /** check specified students' email list is not empty */
-    const specifiedStudentsEmailList: Array<string> = studentsEmailList;
-    if (specifiedStudentsEmailList.length === 0) {
-      throw new Error('student email is missing');
-    }
-
-    /** validate specified students' email */
-    const studentsListValidated: Student[] = await Promise.all(
-      studentsEmailList.map(
-        async email => await validateStudentEmail(email, true)
+    return specifiedStudentsIdListToRegister.map(specifiedStudentId =>
+      Object.assign(
+        {},
+        {
+          studentId: specifiedStudentId,
+          teacherId: specifiedTeacher.id
+        }
       )
     );
+  }
 
-    return [teacherValidated, studentsListValidated];
+  /** Validate and return specified teacher or insert if not found */
+  async validateTeacher(email: string) {
+    return await validateEntity(email, new Teacher(), true);
+  }
+
+  /** Validate and return specified student list or insert if not found */
+  async validateStudents(emailList: string[]) {
+    if (emailList.length === 0) {
+      throw new Error('student email is missing');
+    }
+    return await Promise.all(
+      emailList.map(
+        async email => await validateEntity(email, new Student(), true)
+      )
+    );
   }
 }
