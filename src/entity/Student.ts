@@ -14,12 +14,8 @@ export class Student {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index({
-    unique: true
-  })
-  @Column({
-    unique: true
-  })
+  @Index()
+  @Column()
   @IsEmail()
   email: string;
 

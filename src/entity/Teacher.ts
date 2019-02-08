@@ -14,15 +14,11 @@ export class Teacher {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index({
-    unique: true
-  })
-  @Column({
-    unique: true
-  })
+  @Index()
+  @Column()
   @IsEmail()
   email: string;
-
+  
   @OneToMany(type => Registration, registration => registration.student)
   students: Student[];
 }
