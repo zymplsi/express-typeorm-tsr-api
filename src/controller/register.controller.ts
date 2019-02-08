@@ -20,7 +20,7 @@ export class RegisterController {
         specifiedTeacherEmail
       );
 
-      /** Validate and return specified student list or throw Error */
+      /** Validate and return specified student list or insert if not found */
       const specifiedStudentsList = await this.validateStudents(
         specifiedStudentsEmailList
       );
