@@ -1,7 +1,7 @@
 import { getRepository } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
-import { validateTeacherEmail, EmailValidator } from './helper';
+import { EmailValidator } from './helper';
 import { Student } from '../../src/entity/Student';
 import { Teacher } from '../../src/entity/Teacher';
 
@@ -11,21 +11,15 @@ export class CommonStudentsController {
   /** retrieve a list of students common to a given list of teachers */
   async find(req: Request, res: Response, next: NextFunction) {
     try {
-      const queryParams = req.query.teacher;
-
       /** single email queryParam is not an Array */
       /** normalise all queryParams into an Array */
-      const specifiedTeacherEmails = Array.isArray(queryParams)
-        ? queryParams
-        : [queryParams];
+      const specifiedTeacherEmails = this.normaliseEmailsIntoArray(
+        req.query.teacher
+      );
 
       /** validate specified teachers' email */
       /** throw error if email is not found */
-      await Promise.all(
-        specifiedTeacherEmails.map(
-          async email =>  await this.validateEntity(email, new Teacher())
-        )
-      );
+      await this.validateEmails(specifiedTeacherEmails);
 
       /** list all students registered to specified teachers */
       const specifiedTeacherRegistrationList = await this.registrationRepository
@@ -45,15 +39,30 @@ export class CommonStudentsController {
         students: commonStudentsEmailList
       });
     } catch (error) {
+      console.log(error);
       res.status(400).send(error.message);
     }
   }
 
+  /** normalise teachers email list into an arrary  */
+  normaliseEmailsIntoArray(emails: string | string[]) {
+    return Array.isArray(emails) ? emails : [emails];
+  }
+
+  /** validate specified teachers' email */
+  /** throw error if email is not found */
+  async validateEmails(emails: string[]) {
+      await Promise.all(
+        emails.map(async email => await this.validateEntity(email, new Teacher()))
+      );
+  }
+
   /** retrieve from registaration list id of students*/
   /** that are common to sepcified teachers */
-  private async getCommonStudensEmailList(
+  async getCommonStudensEmailList(
     specifiedTeacherRegistrationList: Registration[]
   ) {
+
     /** map through registrations list to get student ids */
     /** and do a count of each student id that is duplicated */
     const commonStudensIdList = specifiedTeacherRegistrationList
@@ -75,7 +84,7 @@ export class CommonStudentsController {
         const specifiedTeacherEmails = specifiedTeacherRegistrationList.map(
           registration => registration.teacher.email
         );
-        
+
         /** id count should be equal to number of unique specified teachers  */
         /** if the id is common  */
         if (count === new Set(specifiedTeacherEmails).size) {
@@ -100,5 +109,4 @@ export class CommonStudentsController {
     await entityValidator.validate();
     return entityValidator;
   }
-
 }
