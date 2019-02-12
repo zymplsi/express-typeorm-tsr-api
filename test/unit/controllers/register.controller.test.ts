@@ -1,17 +1,16 @@
 import 'source-map-support/register';
 import chai, { expect } from 'chai';
 import * as typeorm from 'typeorm';
-import { stub, createStubInstance, spy, restore } from 'sinon';
+import { stub, createSandbox, SinonSandbox } from 'sinon';
 import { RegisterController } from '../../../src/controller/register.controller';
-import { Registration } from '../../../src/entity/Registration';
 import { Request, Response, NextFunction } from 'express';
 import { mockRes } from 'sinon-express-mock';
 import sinonChai from 'sinon-chai';
 
 import fs from 'fs';
 import { promisify } from 'util';
-import { Student } from '../../../src/entity/Student';
 import { Teacher } from '../../../src/entity/Teacher';
+import { Student } from '../../../src/entity/Student';
 const promisifyFsFile = promisify(fs.readFile);
 
 chai.use(sinonChai);
@@ -20,86 +19,83 @@ describe('RegisterController', async () => {
   let req: Partial<Request>;
   let res: Response;
   let next: NextFunction;
+  let sandbox: SinonSandbox;
 
   beforeEach(() => {
+    sandbox = createSandbox();
     res = mockRes();
     next = stub();
   });
 
-  after(() => {
-    restore();
+  afterEach(() => {
+    sandbox.restore();
   });
 
-  it('should call the Querybuilder', async () => {
-    const fakeRepository: typeorm.Repository<Registration> = createStubInstance(
-      typeorm.Repository
+  it('should call query for all students already registered to specified teacher', async () => {
+    const fakeSelectQueryBuilderResult = [];
+    const fakeSelectQueryBuilder = sandbox.createStubInstance(
+      typeorm.SelectQueryBuilder
     );
-    stub(typeorm, 'getRepository').returns(fakeRepository);
-    fakeRepository.createQueryBuilder('registration');
+    fakeSelectQueryBuilder.innerJoinAndSelect.returnsThis();
+    fakeSelectQueryBuilder.where.returnsThis();
+    fakeSelectQueryBuilder.getMany.resolves(fakeSelectQueryBuilderResult);
+
+    const fakeRepository = sandbox.createStubInstance(typeorm.Repository);
+    fakeRepository.createQueryBuilder.returns(<any>fakeSelectQueryBuilder);
+    sandbox.stub(typeorm, 'getRepository').returns(fakeRepository);
+
     const registerController = new RegisterController();
-    expect(fakeRepository.createQueryBuilder).calledWith('registration');
+    const result = await registerController.querySpecifiedTeacherRegistrationList(
+      new Teacher()
+    );
+
+    expect(result).equal(fakeSelectQueryBuilderResult);
   });
 
-  it('should validate emails', async () => {
-    const emailsCorrectList = ['abc@abc.com'];
-    const emailsWrongList = ['abc.abc.com'];
+  it('should call function to validate teacher email function', async () => {
+    const teacher = new Teacher();
+    const fakeRepository = sandbox.createStubInstance(typeorm.Repository);
+    sandbox.stub(typeorm, 'getRepository').returns(fakeRepository);
     const registerController = new RegisterController();
+    sandbox.stub(registerController, 'validateTeacher').resolves(teacher);
 
-    registerController.validateTeacher(emailsCorrectList[0]).catch(error => {
-      /** error is thrown from Typeorm query which is after the validate function */
-      expect(error.message).to.be.equal(
-        "Cannot read property 'where' of undefined"
-      );
-    });
-    registerController.validateTeacher(emailsWrongList[0]).catch(error => {
-      expect(error.message).to.be.equal('email is not valid');
-    });
-
-    registerController.validateStudents(emailsCorrectList).catch(error => {
-      /** error is thrown from Typeorm query which is after the validate function */
-      expect(error.message).to.be.equal(
-        "Cannot read property 'where' of undefined"
-      );
-    });
-    registerController.validateStudents(emailsWrongList).catch(error => {
-      expect(error.message).to.be.equal('email is not valid');
-    });
-
-    registerController.validateStudents([]).catch(error => {
-      expect(error.message).to.be.equal('student email is missing');
-    });
+    const validateTeacherResolved = await registerController.validateTeacher(
+      null
+    );
+    expect(validateTeacherResolved).equal(teacher);
   });
 
-  it('should list new students to register to specified teacher', async () => {
-    const specifiedTeacherRegistrationList = await promisifyFsFile(
-      __dirname + '/specifiedTeacherRegistrationList.json',
-      { encoding: 'utf8' }
+  it('should call function to validate students email', async () => {
+    const student = new Student();
+    const fakeRepository = sandbox.createStubInstance(typeorm.Repository);
+    sandbox.stub(typeorm, 'getRepository').returns(fakeRepository);
+    const registerController = new RegisterController();
+    sandbox.stub(registerController, 'validateStudents').resolves([student]);
+
+    const validateStudentResolved = await registerController.validateStudents(
+      null
     );
+    expect(validateStudentResolved).eql([student]);
+  });
 
-    const currStudent = new Student();
-    currStudent.email = 'abc@abc.com';
-    currStudent.id = 1;
-    const newStudent = new Student();
-    newStudent.email = 'yyy@yyy.com';
-    newStudent.id = 101;
-    const specifiedStudentsList = [currStudent, newStudent];
+  it('should call function to insert teacher and students id pairs into registration repository', async () => {
+    const fakeInsertQueryBuilder = sandbox.createStubInstance(
+      typeorm.InsertQueryBuilder
+    );
+    fakeInsertQueryBuilder.insert.returnsThis();
+    fakeInsertQueryBuilder.into.returnsThis();
+    fakeInsertQueryBuilder.values.returnsThis();
+    fakeInsertQueryBuilder.execute();
 
-    const specifiedTeacher = new Teacher();
-    specifiedTeacher.email = '123@123.com';
-    specifiedTeacher.id = 1;
+    const fakeRepository = sandbox.createStubInstance(typeorm.Repository);
+    fakeRepository.createQueryBuilder.returns(<any>fakeInsertQueryBuilder);
+    sandbox.stub(typeorm, 'getRepository').returns(fakeRepository);
 
     const registerController = new RegisterController();
-
-    const studentsToRegisterWithTeacherList = registerController.studentsToRegisterWithTeacher(
-      JSON.parse(specifiedTeacherRegistrationList),
-      specifiedStudentsList,
-      specifiedTeacher
-    );
-    
-    expect(studentsToRegisterWithTeacherList).to.be.eql([
-      { studentId: 101, teacherId: 1 }
+    await registerController.insertNewRegistraiton([
+      { studentId: 1, teacherId: 1 }
     ]);
+
+    expect(fakeInsertQueryBuilder.execute).called;
   });
-
-
 });

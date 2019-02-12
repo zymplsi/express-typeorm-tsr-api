@@ -1,4 +1,4 @@
-import { getRepository } from 'typeorm';
+import { getRepository, SelectQueryBuilder } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import { Registration } from '../entity/Registration';
 import { Student } from '../entity/Student';
@@ -6,7 +6,7 @@ import { Teacher } from '../entity/Teacher';
 import { validateEntity } from './helper';
 
 export class RegisterController {
-  private registrationRepository = getRepository(Registration);
+  registrationRepository = getRepository(Registration);
 
   /** A teacher can register multiple students. */
   /** A student can also be registered to multiple teachers. */
@@ -26,12 +26,9 @@ export class RegisterController {
       );
 
       /** select all students already registered to specified teacher */
-      const specifiedTeacherRegistrationList = await this.registrationRepository
-        .createQueryBuilder('registration')
-        .innerJoinAndSelect('registration.teacher', 'teacher')
-        .innerJoinAndSelect('registration.student', 'student')
-        .where('teacher.email = :email', { email: specifiedTeacher.email })
-        .getMany();
+      const specifiedTeacherRegistrationList = await this.querySpecifiedTeacherRegistrationList(
+        <Teacher>specifiedTeacher
+      );
 
       /** list students to register to specified teacher */
       const studentsToRegisterWithTeacherList = this.studentsToRegisterWithTeacher(
@@ -41,17 +38,34 @@ export class RegisterController {
       );
 
       /** insert teacher, students id pairs into registration repository */
-      await this.registrationRepository
-        .createQueryBuilder()
-        .insert()
-        .into(Registration)
-        .values(studentsToRegisterWithTeacherList)
-        .execute();
+      await this.insertNewRegistraiton(studentsToRegisterWithTeacherList);
 
       res.sendStatus(204);
     } catch (error) {
       res.status(400).send(error.message);
     }
+  }
+
+  /** insert teacher, students id pairs into registration repository */
+  async insertNewRegistraiton(studentsToRegisterWithTeacherList: {
+    studentId: number;
+    teacherId: number;
+  }[]) {
+    await this.registrationRepository
+      .createQueryBuilder()
+      .insert()
+      .into(Registration)
+      .values(studentsToRegisterWithTeacherList)
+      .execute();
+  }
+
+  async querySpecifiedTeacherRegistrationList(specifiedTeacher: Teacher) {
+    return this.registrationRepository
+      .createQueryBuilder('registration')
+      .innerJoinAndSelect('registration.teacher', 'teacher')
+      .innerJoinAndSelect('registration.student', 'student')
+      .where('teacher.email = :email', { email: specifiedTeacher.email })
+      .getMany();
   }
 
   /** list students to register to specified teacher */
