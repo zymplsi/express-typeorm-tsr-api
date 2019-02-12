@@ -1,30 +1,20 @@
 import 'source-map-support/register';
 import chai, { expect } from 'chai';
 import * as typeorm from 'typeorm';
-import { stub, createSandbox, SinonSandbox } from 'sinon';
+import { createSandbox, SinonSandbox } from 'sinon';
 import { RegisterController } from '../../../src/controller/register.controller';
-import { Request, Response, NextFunction } from 'express';
-import { mockRes } from 'sinon-express-mock';
 import sinonChai from 'sinon-chai';
 
-import fs from 'fs';
-import { promisify } from 'util';
 import { Teacher } from '../../../src/entity/Teacher';
 import { Student } from '../../../src/entity/Student';
-const promisifyFsFile = promisify(fs.readFile);
 
 chai.use(sinonChai);
 
 describe('RegisterController', async () => {
-  let req: Partial<Request>;
-  let res: Response;
-  let next: NextFunction;
   let sandbox: SinonSandbox;
 
   beforeEach(() => {
     sandbox = createSandbox();
-    res = mockRes();
-    next = stub();
   });
 
   afterEach(() => {
